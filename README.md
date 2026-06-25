@@ -102,7 +102,7 @@ Una vez tengas (extraído + buscado + preguntado) **todos** los datos:
 - Muestra al usuario un **resumen completo** con:
   - Tabla de detectores (números, periodos, ubicaciones, resultados)
   - Todos los campos de §2 con sus valores y la **fuente** de cada uno (`PDF`, `Notion: campaña X`, `derivado`, `usuario`)
-  - Borradores de las dos conclusiones (§4)
+  - Qué plantilla se usará según el resultado: **negativa** (ningún detector > 300 Bq/m³) o **positiva** (algún detector > 300 Bq/m³) — §4. *(El texto de la conclusión ya viene en la plantilla; no hay que redactarlo.)*
 - Pide confirmación explícita: *"¿Doy esto por bueno y monto el DOCX?"*
 - Si el usuario corrige algo, actualiza y vuelve a mostrar antes de generar.
 - **Solo cuando confirme se genera el DOCX.**
@@ -132,31 +132,25 @@ Una vez tengas (extraído + buscado + preguntado) **todos** los datos:
 - `detector_ubicacion` → zona dentro del centro
 - `detector_resultado` → `XX ± XX Bq/m³`
 
-### Conclusiones automáticas
+### Selección de plantilla según resultado
 
 Determina:
 - `valor_maximo` → resultado más alto (valor central ± incertidumbre)
 - `alguno_supera_300` → ¿algún detector > 300 Bq/m³?
-- `alguno_supera_100` → ¿algún detector > 100 Bq/m³?
 
-**CONCLUSION_PARRAFO_1** (cumplimiento normativo):
+Según `alguno_supera_300`, elige la plantilla en §5:
+- **Ningún detector supera 300 Bq/m³** → `plantilla-informe-negativo.docx`
+- **Algún detector supera 300 Bq/m³** → `plantilla-informe-positivo.docx`
 
-a) Si NINGUNO supera 300 Bq/m³:
-> *"Ninguna de las medidas tomadas en {UBICACION_CENTRO_CORTO} en {MUNICIPIO} supera la dosis máxima permitida ya que los resultados obtenidos en las mediciones, con periodos de exposición de detectores de 3 meses, todas las mediciones de valores de concentración de gas radón fueron inferiores a los 300 Bq/m³, establecidos como nivel de referencia por el Real Decreto 1029/2022 de 20 de diciembre de 2022 y por la Instrucción IS-47 del CSN."*
+### Conclusiones
 
-b) Si ALGUNO supera 300 Bq/m³:
-> *"Se han detectado valores superiores al nivel de referencia de 300 Bq/m³ en {UBICACION_CENTRO_CORTO} en {MUNICIPIO}. Los detectores ubicados en {zonas_afectadas} han registrado concentraciones de {valores_afectados}, superando el límite establecido por el Real Decreto 1029/2022 de 20 de diciembre de 2022 y por la Instrucción IS-47 del CSN."*
+⚠️ **El texto de las conclusiones YA VIENE ESCRITO dentro de cada plantilla** (positiva y negativa). **No las redactes ni las reescribas:** elegir la plantilla correcta por el umbral de 300 Bq/m³ es lo que pone la conclusión adecuada.
 
-**CONCLUSION_PARRAFO_2** (recomendaciones):
+Tu único trabajo con las conclusiones es:
+- Elegir la plantilla correcta (negativa / positiva) según `alguno_supera_300`.
+- Si la plantilla contiene placeholders dentro de la conclusión (p. ej. `{valor_maximo}`, `{zonas_afectadas}`), rellénalos como cualquier otro placeholder. Si el texto es fijo y no tiene placeholders, **déjalo tal cual**.
 
-a) Si NINGUNO supera 100 Bq/m³:
-> *"El valor más alto registrado fue de {valor_maximo}, muy por debajo del nivel de referencia de 300 Bq/m³. Por tanto, no se considera necesaria la adopción de medidas de remediación ni de protección radiológica adicionales en este centro de trabajo."*
-
-b) Si ALGUNO supera 100 Bq/m³ pero NINGUNO supera 300 Bq/m³:
-> *"El valor más alto registrado fue de {valor_maximo}, por debajo del nivel de referencia de 300 Bq/m³. No obstante, {cantidad} de los detectores ubicados en {zonas_con_>100} registraron valores superiores a los 100 Bq/m³ recomendados por la Organización Mundial de la Salud (OMS), por lo que se recomienda valorar la adopción de medidas de mitigación en {dichas zonas/dicha zona}. En cualquier caso, no se considera necesaria la adopción de medidas de protección radiológica adicionales en este centro de trabajo conforme a la normativa vigente."*
-
-c) Si ALGUNO supera 300 Bq/m³:
-> *"El valor más alto registrado fue de {valor_maximo}, superando el nivel de referencia de 300 Bq/m³. Se requiere la adopción de medidas de remediación en {zonas_afectadas} y, conforme a la Instrucción IS-33 del Consejo de Seguridad Nuclear, se deberá realizar una estimación anual de las dosis efectivas individuales recibidas por los trabajadores expuestos. Se recomienda contactar con un servicio de protección radiológica para la evaluación dosimétrica y la implementación de medidas correctoras."*
+No preguntes al usuario qué conclusión poner ni le muestres borradores de conclusión: la plantilla ya las trae.
 
 ---
 
@@ -179,7 +173,7 @@ c) Si ALGUNO supera 300 Bq/m³:
    # caso positivo (alguno supera 300):
    cp /home/claude/plantillas/plantilla-informe-positivo.docx /home/claude/plantilla-informe.docx
    ```
-   El criterio es el nivel de referencia legal de **300 Bq/m³**: el umbral de 100 Bq/m³ (OMS) **no** cambia de plantilla, solo afecta al texto de la conclusión (§4, párrafo 2).
+   El único criterio para elegir plantilla es el nivel de referencia legal de **300 Bq/m³**. Cada plantilla ya trae su conclusión escrita (§4).
 4. Desempaqueta con `unpack.py`, edita los XML sustituyendo todos los placeholders `{PLACEHOLDER}` por sus valores, **actualiza los bindings de la portada (§5.1)**, expande el bloque `{#DETECTORES}...{/DETECTORES}` (§6), y reempaqueta con `pack.py --original`.
 5. **NUNCA** crees un documento desde cero con `docx-js` ni `pandoc`. Todo el formato, estilos, imágenes y estructura deben venir de la plantilla clonada.
 6. Entrega el DOCX con `present_files` y **espera la validación del usuario antes de continuar al PDF**.
@@ -325,8 +319,8 @@ Verifica que `acreditaciones_pdfs` no esté vacío antes de combinar; si lo est�
 - Pide la ubicación/zona de cada detector si no viene clara (Radonova suele dar solo el municipio).
 - **No inventes datos**: si falta algo después de buscar, pregunta.
 - Verifica coherencia: si las fechas del PDF no cuadran con las de Notion o con lo que dice el usuario, avisa.
-- **Antes de generar el DOCX**, muestra al usuario el resumen completo (datos + fuente + conclusiones) y espera confirmación explícita (§2.3).
-- Las conclusiones se generan automáticamente. **No preguntes qué conclusión poner.**
+- **Antes de generar el DOCX**, muestra al usuario el resumen completo (datos + fuente + plantilla que se usará) y espera confirmación explícita (§2.3).
+- Las conclusiones **ya vienen escritas en la plantilla** (negativa/positiva según 300 Bq/m³). No las redactes ni preguntes qué conclusión poner; solo elige la plantilla correcta (§4).
 - Antes de combinar el PDF, **espera la validación explícita del DOCX**.
 - **Actas = PDF de Radonova.** No busques documentos de colocación/retirada por separado.
 - **Outlook ≠ Gmail**: para correo, siempre MCP de Microsoft.
@@ -367,9 +361,8 @@ He completado lo que he podido. Resumen para que lo valides antes de generar el 
 | FECHA_ANALISIS | *—* | **falta** |
 | NUMERO_COMISION | 25-1234 | Notion |
 
-**Borrador conclusiones:**
-- Párrafo 1: ningún detector supera 300 Bq/m³ → texto de cumplimiento estándar (caso a).
-- Párrafo 2: 2 detectores superan 100 Bq/m³ (zonas a definir) → texto de mitigación recomendada (caso b).
+**Plantilla a usar:**
+- Ningún detector supera 300 Bq/m³ → **plantilla negativa** (`plantilla-informe-negativo.docx`). La conclusión ya viene escrita en ella.
 
 Me falta confirmar:
 1. La **zona exacta** de cada detector dentro de la farmacia
