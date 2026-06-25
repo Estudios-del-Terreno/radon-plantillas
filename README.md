@@ -170,10 +170,16 @@ c) Si ALGUNO supera 300 Bq/m³:
    ```
    view /mnt/skills/public/docx/SKILL.md
    ```
-3. Copia la plantilla a tu directorio de trabajo:
+3. **Elige la plantilla según el resultado** (§4, `alguno_supera_300`) y cópiala a tu directorio de trabajo:
+   - **Algún detector supera 300 Bq/m³** (caso positivo) → `plantilla-informe-positivo.docx`
+   - **Ningún detector supera 300 Bq/m³** (caso negativo) → `plantilla-informe-negativo.docx`
    ```bash
-   cp /home/claude/plantillas/plantilla-informe.docx /home/claude/plantilla-informe.docx
+   # caso negativo (ninguno supera 300):
+   cp /home/claude/plantillas/plantilla-informe-negativo.docx /home/claude/plantilla-informe.docx
+   # caso positivo (alguno supera 300):
+   cp /home/claude/plantillas/plantilla-informe-positivo.docx /home/claude/plantilla-informe.docx
    ```
+   El criterio es el nivel de referencia legal de **300 Bq/m³**: el umbral de 100 Bq/m³ (OMS) **no** cambia de plantilla, solo afecta al texto de la conclusión (§4, párrafo 2).
 4. Desempaqueta con `unpack.py`, edita los XML sustituyendo todos los placeholders `{PLACEHOLDER}` por sus valores, **actualiza los bindings de la portada (§5.1)**, expande el bloque `{#DETECTORES}...{/DETECTORES}` (§6), y reempaqueta con `pack.py --original`.
 5. **NUNCA** crees un documento desde cero con `docx-js` ni `pandoc`. Todo el formato, estilos, imágenes y estructura deben venir de la plantilla clonada.
 6. Entrega el DOCX con `present_files` y **espera la validación del usuario antes de continuar al PDF**.
@@ -391,7 +397,8 @@ El repositorio `https://github.com/Estudios-del-Terreno/radon-plantillas.git` co
 ```
 radon-plantillas/
 ├── README.md                   ← ESTAS instrucciones (system prompt completo)
-├── plantilla-informe.docx      ← plantilla del informe
+├── plantilla-informe-negativo.docx  ← informe cuando NINGÚN detector supera 300 Bq/m³
+├── plantilla-informe-positivo.docx  ← informe cuando ALGÚN detector supera 300 Bq/m³
 ├── presupuesto-cte.docx        ← plantillas de presupuesto
 ├── presupuesto-laboral.docx
 ├── presupuesto-rapidos.docx
