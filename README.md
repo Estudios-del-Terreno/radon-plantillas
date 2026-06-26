@@ -34,7 +34,7 @@ radon-plantillas/
 | **Generador de informes** | `roles/generador-informes.md` | Genera el informe DOCX desde plantilla y ensambla el PDF combinado para el cliente | Por **centro** (uno) |
 
 El procesado de actas es **upstream** del generador: archiva las actas y completa Notion; el generador
-luego consume esos datos (y puede coger el acta de SharePoint en vez de rebuscar en Outlook).
+luego consume esos datos. (El acta archivada en SharePoint y la del correo de Radonova son el **mismo fichero**; pero con las herramientas actuales **no se puede descargar de SharePoint**, así que el generador coge el PDF del **adjunto del correo** — ver `comun/CONTEXTO.md` §3.2 y §7.)
 
 ## Cómo arranca cada agente
 

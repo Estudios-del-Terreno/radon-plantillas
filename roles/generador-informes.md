@@ -205,8 +205,11 @@ Versiones abreviadas sin espacios (guiones bajos). Ej.: `Informe_Juana_Perez_C_E
 ### 8.2 Actas = PDF de Radonova
 ⚠️ Regla general en `comun/CONTEXTO.md` §4. Normalmente el usuario ya adjuntó el PDF al inicio (§1).
 Si no se dispone, se puede localizar el correo de Radonova en Outlook por comisión (§8.2.1) — pero el
-documento que entra como actas es ese PDF, no otros. **Alternativa:** si el procesador de actas ya lo
-archivó, el PDF puede estar en SharePoint bajo `campañas/<campaña>/<ficha>/<comisión>.pdf`.
+documento que entra como actas es ese PDF, no otros. **Origen real del PDF (corrección):** aunque el procesador archiva el acta en SharePoint
+(`campañas/<campaña>/<ficha>/<comisión>.pdf`), **con las herramientas actuales NO se puede
+descargar de SharePoint** (ver `comun/CONTEXTO.md` §3.2 y §7). Por eso el PDF se obtiene del
+**adjunto del correo de Radonova** (§8.2.1), que es **el mismo fichero**. SharePoint solo sirve para
+localizar/confirmar (`search_files` por `<comisión>.pdf`), no para descargar.
 
 #### 8.2.1 Localizar el PDF de Radonova en Outlook (solo si falta)
 ⚠️ **MCP de Microsoft, NUNCA Gmail** (`comun/CONTEXTO.md` §3.1).

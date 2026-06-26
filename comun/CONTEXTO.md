@@ -22,7 +22,7 @@ de gas radón que opera principalmente en **Canarias**. El laboratorio que anali
    final para el cliente.
 
 La etapa 1 es **upstream** de la 2: el acta que archiva el procesador puede ser la misma que consume
-el generador (de hecho el generador puede cogerla de SharePoint en vez de rebuscar en Outlook).
+el generador. ⚠️ Pero **con las herramientas actuales no se puede descargar de SharePoint** (solo subir): el generador obtiene el PDF del **adjunto del correo de Radonova**, que es **el mismo fichero** que se archivó en SharePoint (ver §3.2 y §7).
 
 Trabaja siempre en **español**.
 
@@ -53,6 +53,15 @@ Trabaja siempre en **español**.
 - `drive_id` de IT: `b!WPWtbG7mkECwK4v24TUZYKAWPQc37cRIijRd_7KXeeUW6PLSPpU9QakXXksxzZw8`
   - Si falla, re-resuélvelo: `sharepoint_resolve_site` → `sharepoint_list_drives` → coge el drive "IT".
 - ⚠️ Esta cuenta **no tiene OneDrive personal** (`/me/drive` da 404). Usa SIEMPRE SharePoint.
+- ⚠️ **Pero NO se puede DESCARGAR de SharePoint con las herramientas actuales (jun 2026).** El MCP
+  de Microsoft solo trae `get_file` / `list_files` contra `/me/drive` (que aquí da 404); para
+  SharePoint solo hay herramientas de **subida/gestión** (`sharepoint_upload_file`,
+  `sharepoint_create_link`, `sharepoint_list_drives`, `sharepoint_resolve_site`) — **ninguna de
+  descarga**. `search_files` sí localiza el fichero (`<comisión>.pdf`) y devuelve su `item id`, pero
+  `get_file` falla con **404** y el `download_url` viene **`null`**. → **Para conseguir el PDF de un
+  acta, descarga el adjunto del correo de Radonova** (§3.4 y generador §8.2.1): es **el mismo
+  fichero** que hay en SharePoint (mismos bytes — verificado: comisión 9187509 = 180 279 B en
+  ambos). SharePoint queda como **archivo/consulta**, no como origen de descarga.
 
 ### 3.3 Notion — base "campañas"
 
@@ -140,3 +149,4 @@ El titular ayuda como respaldo, pero **la dirección manda**.
 | PDF no está en disco al subir a SharePoint | Re-descargar del correo: localizar Graph id (`list_emails`) y `get_attachment` |
 | SharePoint rechaza nombre de carpeta/archivo | Quitar caracteres prohibidos `" * : < > ? / \ |` del nombre (no afecta al enlace de Notion) |
 | OneDrive `/me/drive` da 404 | Esta cuenta no tiene OneDrive personal; usar SIEMPRE SharePoint (§3.2) |
+| Descargar un acta de SharePoint | No hay herramienta de descarga (`get_file`/`list_files` usan `/me/drive` → 404; `download_url` null). Coge el PDF del **adjunto del correo de Radonova** (§8.2.1): mismo fichero, mismos bytes |
