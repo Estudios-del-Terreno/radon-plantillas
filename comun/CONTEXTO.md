@@ -55,20 +55,28 @@ Trabaja siempre en **español**.
 - ⚠️ Esta cuenta **no tiene OneDrive personal** (`/me/drive` da 404). Usa SIEMPRE SharePoint.
 
 ### 3.3 Notion — base "campañas"
-La base de datos administrativa se llama **"campañas"**: tiene varias páginas/tablas por tipo de
-campaña (p. ej. farmacias) y una página general. Datos administrativos: **titular**, dirección,
-comisión, conteo de detectores, estado, acta.
 
-Colecciones conocidas (⚠️ **CONFIRMAR cuál corresponde a qué**, ver §6):
+Hay **DOS niveles** y es crítico no confundirlos:
 
-| Campaña / tabla | `collection://` | Visto en |
-|---|---|---|
-| Farmacias Gran Canaria (general) | `34fde4a3-1373-80a3-a79c-c86010370631` | generador de informes |
-| Farmacias Gran Canaria Feb - Mar | `34fde4a3-1373-8134-a75a-000b2944ed1a` | procesado de actas |
+1. **Índice de campañas** — base titulada **CAMPAÑAS**, solo columnas `Name` + `Tags`. Sirve para
+   *localizar* una campaña; **no** contiene datos de fichas.
+   - Fetch por: `collection://34fde4a3-1373-80a3-a79c-c86010370631`
+   - (Su data source real es `collection://34fde4a3-1373-80f4-891c-000b60bac8d4`.)
 
+2. **Tabla de fichas de una campaña** — aquí viven los datos reales que usan los dos agentes:
+   `Ficha` (título), `Direccion`, `N* Comision`, `N* detectores`, `Acta encontrada` (checkbox),
+   `Actas` (file), `Stage` (con estados como "Recogido"), `Municipio`, fechas, `Informe DOCX/PDF
+   borrador`…
+   - ⚠️ **El ID de esta tabla es PROPIO de cada campaña.** No lo hardcodees: resuélvelo cada vez
+     (busca la campaña por nombre, o desde el índice CAMPAÑAS) y usa su `collection://`.
+   - **Campaña actual (ejemplo):** Farmacias GC "Feb - Mar" (la tabla aparece titulada
+     "Applications (1)") = `collection://34fde4a3-1373-8134-a75a-000b2944ed1a`.
+
+- ⚠️ Las consultas SQL de los agentes (`SELECT "Ficha","Direccion","Acta encontrada"…`) **solo
+  funcionan contra la tabla de fichas (nivel 2)**, nunca contra el índice CAMPAÑAS (nivel 1).
 - El `page_id` de cada ficha sale del campo `url` de la fila (los 32 caracteres hex finales).
-- **La búsqueda más fiable es por número de comisión**, porque las fichas se nombran por el
-  **titular**, no por el nombre comercial.
+- **La búsqueda más fiable es por número de comisión** (`N* Comision`), porque las fichas se nombran
+  por el **titular**, no por el nombre comercial.
 
 ### 3.4 Radonova — correo de actas
 - Asunto: empieza por
@@ -110,11 +118,12 @@ El titular ayuda como respaldo, pero **la dirección manda**.
 
 ---
 
-## 6. Discrepancias pendientes de confirmar con Luis
+## 6. Notas resueltas
 
-- **Dos `collection://` distintos para "Farmacias Gran Canaria"** (§3.3). Hay que confirmar si son
-  dos tablas reales distintas (general vs. campaña "Feb - Mar") o si una quedó obsoleta. Mientras no
-  se confirme, usa la que corresponda a la campaña concreta que se esté procesando.
+- **Los dos `collection://` que circulaban no eran dos campañas:** uno era el índice **CAMPAÑAS**
+  (Name + Tags, sin datos de fichas) y el otro la **tabla de fichas** real de la campaña actual.
+  Aclarado en §3.3. Regla: para trabajar usa siempre la **tabla de fichas** y **resuelve su ID por
+  campaña**, no lo hardcodees.
 
 ---
 

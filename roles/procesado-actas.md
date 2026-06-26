@@ -57,8 +57,8 @@ Para cada comisión:
 SELECT "Ficha", "Direccion", "Acta encontrada", url
 FROM "collection://<DATA_SOURCE_ID>"
 ```
-- `<DATA_SOURCE_ID>` = la colección de la campaña concreta (`comun/CONTEXTO.md` §3.3; ojo a la
-  discrepancia de §6).
+- `<DATA_SOURCE_ID>` = la **tabla de fichas** de la campaña concreta (resuélvela cada vez, NO
+  hardcodees; `comun/CONTEXTO.md` §3.3). Nunca el índice CAMPAÑAS.
 - ⚠️ Parser SQL de Notion: NO metas columnas con `*` ni `ORDER BY` entre comillas (§7).
 - El `page_id` de cada ficha sale del campo `url` (32 hex finales).
 
