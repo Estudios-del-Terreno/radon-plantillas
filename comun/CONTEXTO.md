@@ -22,7 +22,11 @@ de gas radón que opera principalmente en **Canarias**. El laboratorio que anali
    final para el cliente.
 
 La etapa 1 es **upstream** de la 2: el acta que archiva el procesador puede ser la misma que consume
-el generador. ⚠️ Pero **con las herramientas actuales no se puede descargar de SharePoint** (solo subir): el generador obtiene el PDF del **adjunto del correo de Radonova**, que es **el mismo fichero** que se archivó en SharePoint (ver §3.2 y §7).
+el generador. ✅ **Ya se puede DESCARGAR de SharePoint** con `download_shared_file` / `get_shared_item`
+(resuelven un enlace de compartición de SharePoint y bajan los bytes). Por eso el generador puede
+coger el acta de **dos sitios equivalentes** (mismo fichero): el campo **`Actas` de Notion** (enlace
+SharePoint) o el **adjunto del correo de Radonova**. **Por defecto, pregunta a Luis cuál usar**
+(ver §3.2 y generador §8.2).
 
 Trabaja siempre en **español**.
 
@@ -53,15 +57,25 @@ Trabaja siempre en **español**.
 - `drive_id` de IT: `b!WPWtbG7mkECwK4v24TUZYKAWPQc37cRIijRd_7KXeeUW6PLSPpU9QakXXksxzZw8`
   - Si falla, re-resuélvelo: `sharepoint_resolve_site` → `sharepoint_list_drives` → coge el drive "IT".
 - ⚠️ Esta cuenta **no tiene OneDrive personal** (`/me/drive` da 404). Usa SIEMPRE SharePoint.
-- ⚠️ **Pero NO se puede DESCARGAR de SharePoint con las herramientas actuales (jun 2026).** El MCP
-  de Microsoft solo trae `get_file` / `list_files` contra `/me/drive` (que aquí da 404); para
-  SharePoint solo hay herramientas de **subida/gestión** (`sharepoint_upload_file`,
-  `sharepoint_create_link`, `sharepoint_list_drives`, `sharepoint_resolve_site`) — **ninguna de
-  descarga**. `search_files` sí localiza el fichero (`<comisión>.pdf`) y devuelve su `item id`, pero
-  `get_file` falla con **404** y el `download_url` viene **`null`**. → **Para conseguir el PDF de un
-  acta, descarga el adjunto del correo de Radonova** (§3.4 y generador §8.2.1): es **el mismo
-  fichero** que hay en SharePoint (mismos bytes — verificado: comisión 9187509 = 180 279 B en
-  ambos). SharePoint queda como **archivo/consulta**, no como origen de descarga.
+- ✅ **DESCARGA de SharePoint (actualizado jun 2026):** ya funciona con
+  **`download_shared_file`** (y **`get_shared_item`** para resolver metadatos) a partir del **enlace
+  de compartición** que guarda Notion en el campo `Actas`
+  (`https://estudiosdelterreno.sharepoint.com/:b:/s/geotecnia/<token>`). Resuelven el enlace vía
+  Graph `/shares` y bajan los bytes. ⚠️ `get_file` **sigue dando 404** (usa `/me/drive`) y
+  `search_files` devuelve `download_url: null` — **no** los uses para descargar; usa
+  `download_shared_file`.
+- Herramientas SharePoint disponibles: descarga (`download_shared_file`, `get_shared_item`),
+  subida/gestión (`sharepoint_upload_file`, `sharepoint_create_link`, `sharepoint_list_drives`,
+  `sharepoint_resolve_site`).
+- **Estructura de carpetas:** `IT/campañas/<campaña>/<Ficha>/` contiene el acta `<comisión>.pdf` y
+  (tras el generador) el `Informe_*.docx` y `Informe_*.pdf`. La carpeta `<Ficha>` = título de la
+  ficha, salvo que el procesador haya tenido que limpiar caracteres prohibidos (p. ej.
+  "José Mendoza y Juan Mendoza **C.B.**" → carpeta "...**CB**", sin punto final). Resuelve la carpeta
+  real con `get_shared_item` del acta si dudas.
+- ⚠️ **Subida y límite de ruta Windows (MAX_PATH 260):** `sharepoint_upload_file` lee el fichero
+  **local**; si la ruta local supera ~260 caracteres falla con `No such file or directory` (aunque
+  el fichero exista). Sube desde un **nombre local corto** (el nombre destino en SharePoint sí puede
+  ser largo y descriptivo).
 
 ### 3.3 Notion — base "campañas"
 
@@ -149,4 +163,6 @@ El titular ayuda como respaldo, pero **la dirección manda**.
 | PDF no está en disco al subir a SharePoint | Re-descargar del correo: localizar Graph id (`list_emails`) y `get_attachment` |
 | SharePoint rechaza nombre de carpeta/archivo | Quitar caracteres prohibidos `" * : < > ? / \ |` del nombre (no afecta al enlace de Notion) |
 | OneDrive `/me/drive` da 404 | Esta cuenta no tiene OneDrive personal; usar SIEMPRE SharePoint (§3.2) |
-| Descargar un acta de SharePoint | No hay herramienta de descarga (`get_file`/`list_files` usan `/me/drive` → 404; `download_url` null). Coge el PDF del **adjunto del correo de Radonova** (§8.2.1): mismo fichero, mismos bytes |
+| Descargar un acta de SharePoint | ✅ Usa **`download_shared_file`** con el enlace del campo `Actas` de Notion (`get_file`/`search_files` NO sirven: 404 / `download_url` null). El adjunto del correo de Radonova es el mismo fichero (alternativa) |
+| `sharepoint_upload_file` da `No such file or directory` (el fichero sí existe) | Ruta local supera MAX_PATH de Windows (260). Copia a un nombre local corto y sube desde ahí (el nombre destino puede ser largo) |
+| Subir DOCX/PDF final a la ficha de Notion | Sube a `IT/campañas/<campaña>/<Ficha>/` (`sharepoint_upload_file`), crea enlace (`sharepoint_create_link`) o usa el `webUrl`, y pon el valor `file://<json url-encoded {"source":"<url>"}>` en la propiedad de archivo (`Informe DOCX borrador` / `Informe PDF final`) con `notion-update-page` |
