@@ -43,9 +43,13 @@ No empieces a lo loco: confirma estos tres puntos y luego ejecuta del tirón.
 Para cada comisión:
 - `get_email(account_id, email_id, include_attachments=true, include_body=false)`
   → coge el `attachment_id` del adjunto **application/pdf** (ignora el PNG de logo). La dirección
-  suele venir en `bodyPreview`; si está truncada, repite con `include_body=true` y extrae la línea
-  tras "Dirección:".
-- `get_attachment(account_id, attachment_id, email_id, save_path="/Users/Luis/Downloads/<comisión>.pdf")`
+  suele venir en `bodyPreview` (se incluye aunque pongas `include_body=false`); solo si está
+  truncada, repite con `include_body=true` y extrae la línea tras "Dirección:".
+- ⚠️ **El `attachment_id` es ÚNICO por correo**: no se puede reutilizar ni "adivinar" entre correos
+  distintos (aunque el adjunto sea visualmente el mismo PDF). Si una comisión llega duplicada,
+  obtén el `attachment_id` del `email_id` concreto que vayas a usar (un `get_email` por comisión).
+- `get_attachment(account_id, attachment_id, email_id, save_path="C:\\Users\\luish\\Downloads\\<comisión>.pdf")`
+  (en macOS sería `/Users/Luis/Downloads/<comisión>.pdf`; usa la convención del SO en uso).
 - **Nombra SIEMPRE el archivo con la comisión**: `9187497.pdf`. Así el nombre indica a qué ficha va.
 - **Verifica que el archivo existe antes de subirlo.** Si `sharepoint_upload_file` da "No such file
   or directory", vuelve al correo, localiza el Graph id y re-descárgalo (gotcha en §7 del contexto).
@@ -54,38 +58,44 @@ Para cada comisión:
 
 ### 3. Sacar las fichas de Notion (plan Business → SQL)
 ```sql
-SELECT "Ficha", "Direccion", "Acta encontrada", url
+SELECT "Ficha", "Direccion", "Acta recibida", "Actas", url
 FROM "collection://<DATA_SOURCE_ID>"
 ```
 - `<DATA_SOURCE_ID>` = la **tabla de fichas** de la campaña concreta (resuélvela cada vez, NO
   hardcodees; `comun/CONTEXTO.md` §3.3). Nunca el índice CAMPAÑAS.
 - ⚠️ Parser SQL de Notion: NO metas columnas con `*` ni `ORDER BY` entre comillas (§7).
+- ⚠️ El campo se llama **`Acta recibida`**, no "Acta encontrada".
 - El `page_id` de cada ficha sale del campo `url` (32 hex finales).
 
-### 4. Cruzar por dirección (calle + número)
+### 4. Cruzar por dirección (calle + número) o por tipo
 - Cruce por calle + número normalizando → ver `comun/CONTEXTO.md` §5. La dirección manda.
+- **Fichas genéricas sin dirección** (Almacen, Libreria, Ortopedia, Estetica, Casino…) → cruza por
+  **tipo** comparando con el nombre comercial del PDF (línea "Dirección:" del email). Detalle y
+  ejemplos en `comun/CONTEXTO.md` §5.1.
 - Si una comisión no casa con seguridad, **NO la fuerces**: repórtala como "sin ficha" y pregunta.
 
 ### 5. Subir a SharePoint + enlazar en Notion
 Para cada comisión casada, en este orden:
-1. `sharepoint_upload_file(account_id, "<DRIVE_ID_IT>", "/Users/Luis/Downloads/<comisión>.pdf", "campañas/<NOMBRE CAMPAÑA>/<NOMBRE FICHA>/<comisión>.pdf")` → devuelve `id`.
+1. `sharepoint_upload_file(account_id, "<DRIVE_ID_IT>", "C:\\Users\\luish\\Downloads\\<comisión>.pdf", "campañas/<NOMBRE CAMPAÑA>/<NOMBRE FICHA>/<comisión>.pdf")` → devuelve `id`.
+   (En macOS: `/Users/Luis/Downloads/<comisión>.pdf`.)
    - Las carpetas intermedias se crean solas.
    - Quita los caracteres prohibidos del nombre de ficha (`" * : < > ? / \ |`, §7).
 2. `sharepoint_create_link(account_id, "<DRIVE_ID_IT>", "<item_id>", link_type="view", scope="organization")` → devuelve `webUrl`.
    - Usa `scope="organization"`. Solo `scope="anonymous"` si Luis pide acceso externo sin login.
-3. `notion-update-page(command="update_properties", page_id="<page_id>", properties={"Acta encontrada": "__YES__", "Actas": "<webUrl>"})`
+3. `notion-update-page(command="update_properties", page_id="<page_id>", properties={"Acta recibida": "__YES__", "Actas": "<webUrl>"})`
    - El campo `Actas` (file) solo acepta una **URL** (string). Para borrarlo no sirve `""` (§7).
 
-> Rate limit de Notion (429 tras ~20 escrituras) → §7. Ve algo más pausado en tandas grandes.
+> Rate limit de Notion (429 tras ~20 escrituras) → §7. Tandas grandes: parte en 2 lotes de ~12 y
+> espera ~30 s entre lotes (validado jun 2026, 24 actualizaciones consecutivas).
 
 ### 6. Verificar
 ```sql
-SELECT "Ficha", "Actas"
+SELECT "Ficha", "Stage", "Actas"
 FROM "collection://<DATA_SOURCE_ID>"
-WHERE "Acta encontrada" = '__YES__'
+WHERE "Acta recibida" = '__YES__'
 ```
 - Confirma que las N fichas de la campaña tienen `Actas` relleno.
-- **Ojo con marcados previos:** puede haber fichas con "Acta encontrada = YES" de campañas anteriores
+- **Ojo con marcados previos:** puede haber fichas con "Acta recibida = YES" de campañas anteriores
   SIN acta en `Actas`. Son inconsistencias antiguas; NO las toques salvo que Luis lo pida.
 
 ### 7. Reportar lo que falta
