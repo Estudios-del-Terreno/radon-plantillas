@@ -280,6 +280,91 @@ Cada informe debe quedar **colocado en su ficha de Notion**: el **DOCX** en el c
    Notion completa solo el `permissionRecord`. Verifica con `notion-fetch` que el `source` quedó
    como URL válida. ⚠️ Rate limit Notion: ~20 escrituras seguidas → 429; espacia/reintenta (§7).
 
+### 8.7 Envío del PDF final al cliente por correo (borradores en Outlook)
+
+Cuando Luis pide **enviar el PDF final al cliente**, la instrucción por defecto es **crear un
+borrador en Outlook** (`create_email_draft` del MCP de Microsoft) — Luis lo revisa y envía él desde
+`info@estudiosdelterreno.com`. Para tandas grandes: **haz uno de prueba primero**, Luis lo valida
+en Borradores, y solo entonces creas el resto.
+
+**Destinatario:** el campo `email` de la ficha de Notion (§3.3 del contexto común). Consulta con
+SQL: `SELECT "Ficha","email","Direccion" FROM "<data_source_url>"` (recuerda que columnas con `*`
+como `N* Comision` rompen el parser).
+
+**Asunto:** `Informe de medición de gas radón — {Direccion}` (usa la Direccion de Notion tal cual).
+
+**Cuerpo por defecto:** texto corto en HTML con la firma corporativa de Francisca. Estructura:
+
+```
+Buenos días,
+
+Adjuntamos el informe de medición de la concentración de gas radón realizado en su
+{establecimiento|farmacia|centro}, de acuerdo con el Real Decreto 1029/2022 y la
+Instrucción IS-47 del CSN.
+
+El documento incluye el informe técnico, el acta de resultados del laboratorio (Radonova)
+y las acreditaciones correspondientes.
+
+Quedamos a su disposición para cualquier aclaración.
+
+Saludos cordiales
+[FIRMA HTML — ver más abajo]
+```
+
+**Firma HTML (extraída directamente de correos reales enviados por Francisca):**
+
+⚠️ **Sácala siempre de un correo real**, no la inventes. Con `search_emails` en `sentitems`, coge
+uno reciente con `get_email(include_body=true)`, y copia el bloque `<table>` del `<div id="Signature">`
+literal. Colores clave: rojo corporativo `rgb(156,47,40)`, gris texto `rgb(68,68,68)`.
+
+Versión mínima reproducible (sin la imagen `cid:` de firma manuscrita, que requeriría adjuntar el
+PNG; el logo del banner sí va por URL pública):
+
+```html
+<div style="font-family:Aptos,Aptos_EmbeddedFont,Aptos_MSFontService,Calibri,Helvetica,sans-serif; font-size:12pt; color:rgb(0,0,0)">Buenos días,</div>
+<div style="font-family:Aptos,..."><br></div>
+<div style="font-family:Aptos,...">…párrafos del cuerpo…</div>
+<div style="font-family:Aptos,..."><br></div>
+<div style="font-family:Aptos,...">Saludos cordiales</div>
+<div style="font-family:Aptos,..."><br></div>
+<table cellspacing="0" cellpadding="0" border="0" style="margin:0px; color:rgb(51,51,51)"><tbody><tr>
+  <td style="padding-right:18px; vertical-align:top">
+    <table cellspacing="0" cellpadding="0" border="0"><tbody><tr>
+      <td style="line-height:0; padding-bottom:6px">
+        <img width="148" src="https://estudiosdelterreno.com/images/logo_nuevo_et.png" style="width:148px; display:block">
+      </td>
+    </tr></tbody></table>
+  </td>
+  <td style="background-color:rgb(156,47,40); width:2px"><div style="font-size:1px">&nbsp;</div></td>
+  <td style="padding-left:18px; vertical-align:top">
+    <p style="margin:0px 0px 1px; letter-spacing:0.3px; font-size:15px; color:rgb(156,47,40); font-family:Arial,Helvetica,sans-serif"><b>Francisca María Martín</b></p>
+    <p style="margin:0px 0px 2px; letter-spacing:0.3px; font-size:15px; color:rgb(156,47,40); font-family:Arial,Helvetica,sans-serif"><b>Estudios del Terreno S.L.</b></p>
+    <p style="margin:0px 0px 12px; font-size:11px; color:rgb(136,136,136); font-family:Arial,Helvetica,sans-serif"><i>Geología &nbsp;·&nbsp; Geotecnia &nbsp;·&nbsp; Mediciones de Radón</i></p>
+    <div style="font-family:Arial; padding-bottom:5px"><span style="font-size:11px; color:rgb(156,47,40)"><b>T </b></span><span style="font-size:12px; color:rgb(68,68,68)">922 575 171 &nbsp;&nbsp;|&nbsp;&nbsp; 636 476 827</span></div>
+    <div style="font-family:Arial; padding-bottom:5px"><span style="font-size:11px; color:rgb(156,47,40)"><b>E </b></span><span style="font-size:12px; color:rgb(68,68,68)"><a href="mailto:info@estudiosdelterreno.com" style="color:rgb(68,68,68); text-decoration:none">info@estudiosdelterreno.com</a></span></div>
+    <div style="padding-bottom:2px"><span style="font-family:Arial; font-size:11px; color:rgb(156,47,40)"><b>W </b></span><span style="font-family:Arial; font-size:12px; color:rgb(156,47,40)"><a href="https://www.estudiosdelterreno.com" style="color:rgb(156,47,40); text-decoration:none">estudiosdelterreno.com</a></span><span style="font-family:Arial; font-size:12px; color:rgb(170,170,170)">&nbsp;&nbsp;|&nbsp; </span><span style="font-family:Arial; font-size:12px; color:rgb(209,41,0)"><a href="https://www.radoncanarias.com" style="color:rgb(209,41,0); text-decoration:none">radoncanarias.com</a></span></div>
+  </td>
+</tr></tbody></table>
+```
+
+**Gotchas de `create_email_draft` (MCP de Microsoft, validado jul 2026):**
+
+- El parámetro `attachments` espera **string, no lista**. Pasar `["path"]` falla con `Errno 22
+  Invalid argument`. Pasa la ruta pelada.
+- Ruta local Windows: usa el path REAL con acentos/espacios completos
+  (`C:\Users\luish\Estudios del Terreno SL\...\PDF\Informe_*.pdf`). Cuidado con MAX_PATH 260.
+- `create_email_draft` **no acepta `contentType`** — crea el borrador con el cuerpo como texto. Para
+  meter HTML, usa `update_email` justo después con
+  `updates={"body": {"contentType": "HTML", "content": "<html>…</html>"}}`. Outlook lo re-envuelve
+  en `<html><head>…</head><body>…</body></html>` automáticamente.
+- La respuesta de `create_email_draft` con attachment es **enorme** (devuelve el PDF en base64) y
+  puede desbordar el límite de tokens. Es esperable; el borrador se ha creado igualmente. Verifica
+  con `list_emails(folder="drafts", include_body=false)`.
+- Rate limit típico: no problemático hasta ~30 borradores seguidos con adjunto.
+
+**Nunca envíes correo automáticamente al cliente:** siempre borrador para revisión de Luis
+(`radon-cuenta-correo.md` del perfil local: "Nunca envíes sin OK explícito").
+
 ---
 
 ## 9. REGLAS DE COMPORTAMIENTO
@@ -299,6 +384,8 @@ Cada informe debe quedar **colocado en su ficha de Notion**: el **DOCX** en el c
   enlace SharePoint → `download_shared_file`) o revisar el correo de Radonova (§8.2).
 - **Siempre** sube el DOCX y el PDF final a su ficha de Notion (`Informe DOCX borrador` /
   `Informe PDF final`) al terminar (§8.6).
+- **Envío al cliente:** solo si Luis lo pide, y **siempre como borrador en Outlook**, no envío
+  directo. En tandas, uno de prueba primero para validación (§8.7).
 - Trabaja en **español**.
 
 ---
