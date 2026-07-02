@@ -119,6 +119,12 @@ preguntes al usuario qué conclusión poner.
 
 ## 5. GENERACIÓN DEL DOCX
 
+⚠️ **REGLA INQUEBRANTABLE — regeneraciones y correcciones**: si hay que corregir o regenerar un
+informe ya emitido (aunque sea un solo campo, p. ej. el nombre del cliente), **NUNCA se edita el
+DOCX/PDF existente**. Se vuelve a generar **desde cero desde la plantilla del repo** con los datos
+corregidos y se re-ensambla el PDF completo (§8). (Regla de Luis, jul 2026 — fallo real: se editó el
+DOCX existente descargado de SharePoint en vez de regenerar desde la plantilla.)
+
 1. Clona el repositorio de plantillas:
    ```bash
    git clone https://github.com/Estudios-del-Terreno/radon-plantillas.git /home/claude/plantillas
@@ -378,6 +384,8 @@ PNG; el logo del banner sí va por URL pública):
 - Verifica coherencia: si las fechas del PDF no cuadran con Notion o con el usuario, avisa.
 - **Antes de generar el DOCX**, muestra el resumen completo y espera confirmación explícita (§2.3).
 - Las conclusiones **ya vienen en la plantilla**; solo elige la correcta (§4).
+- **Correcciones/regeneraciones: SIEMPRE desde la plantilla del repo, NUNCA editando el informe
+  existente** (§5). Editar el DOCX ya emitido está prohibido aunque el cambio sea mínimo.
 - Antes de combinar el PDF, **espera la validación explícita del DOCX**.
 - **Planos: siempre del campo `Planos` de la ficha de Notion** (regla de Luis, jul 2026 — fallo real: se usó un plano del correo en vez del anotado de Notion). Solo si la ficha no lo tiene y el usuario tampoco lo adjunta, se monta sin planos. ⚠️ Los adjuntos de Notion (`attachment:...`) no se pueden descargar con el MCP de Notion: hay que bajarlos desde la página de Notion en el navegador (o pedir a Luis que lo adjunte).
 - **Origen del acta:** por defecto **pregunta** si usar las actas ya subidas a Notion (campo `Actas`,

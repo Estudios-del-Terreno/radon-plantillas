@@ -182,3 +182,41 @@ Algunas fichas están guardadas en Notion **sin dirección** y con un título ge
 | Descargar un acta de SharePoint | ✅ Usa **`download_shared_file`** con el enlace del campo `Actas` de Notion (`get_file`/`search_files` NO sirven: 404 / `download_url` null). El adjunto del correo de Radonova es el mismo fichero (alternativa) |
 | `sharepoint_upload_file` da `No such file or directory` (el fichero sí existe) | Ruta local supera MAX_PATH de Windows (260). Copia a un nombre local corto y sube desde ahí (el nombre destino puede ser largo) |
 | Subir DOCX/PDF final a la ficha de Notion | Sube a `IT/campañas/<campaña>/<Ficha>/` (`sharepoint_upload_file`), crea enlace (`sharepoint_create_link`) o usa el `webUrl`, y pon el valor `file://<json url-encoded {"source":"<url>"}>` en la propiedad de archivo (`Informe DOCX borrador` / `Informe PDF final`) con `notion-update-page` |
+
+---
+
+## 8. Registro de detectores en Radonova (MCP `radonova-registro`)
+
+Nueva etapa **upstream de todo el pipeline**: cuando se **colocan/retiran** los detectores, hay que
+**registrarlos en "Mis Páginas" de Radonova** (`online.radonova.com`) — nº de detector, fecha de
+inicio (y fin cuando se retiran) y ubicación. Esto es lo que dispara que el laboratorio analice y,
+más tarde, emita el acta (PDF) que consumen los otros dos agentes.
+
+**MCP:** `radonova-registro` (proyecto `C:\Users\luish\ai\radonova-registro-mcp`; conduce un navegador
+con Playwright). Herramientas:
+- **`radonova_registrar_medicion`** — parámetros: `comision`, `password`, `detectores[]`
+  (`{numero, comienzo, fin?, planta?, localidad?, detalles?}` con fechas `YYYY-MM-DD`), opcionales
+  `contacto`, `direccion`, `identificacionEdificio`, `reemplazarExistentes` (borra las filas
+  existentes antes — necesario para corregir), `guardar` (pulsa GUARDAR TODO al final).
+- **`radonova_leer_medicion`** — login de solo lectura: comisión, pedido, si es editable y detectores.
+- **`radonova_vaciar_medicion`** — BORRAR TODO: elimina todas las filas de detectores y vacía contacto
+  y dirección, para dejar la comisión limpia (o deshacer una prueba). Solo `comision` + `password`.
+
+Las herramientas de registro/vaciado **abren el navegador visible** y **devuelven una captura** del
+formulario al chat para que Luis corrobore el resultado.
+
+**De dónde salen los datos:** de la **foto del albarán Radtrak³** que envía Luis. En el **recuadro
+rojo** están `Comisión número` y `Contraseña` (son ESPECÍFICAS de cada comisión). A mano vienen los
+detectores (nº de 9 dígitos + ubicación) y la fecha de colocación. Extrae esos datos de la imagen y
+pásalos al tool.
+
+⚠️ **Gotchas del portal** (confirmados en el código fuente de la SPA):
+- **Autoguardado**: cada campo se guarda al perder el foco. Rellenar = guardar; **no hay dry-run**.
+- **Borrar** una fila ya guardada abre un **`confirm()` nativo**; el MCP lo acepta automáticamente.
+  El nº de detector, una vez guardado, es de **solo lectura** → para corregirlo, `reemplazarExistentes`.
+- **Rate-limit por IP** ("Too many requests, wait N seconds") si se hacen muchos logins seguidos;
+  el MCP espera y reintenta, pero **no encadenes logins** innecesarios.
+- Convención acordada con Luis: la **etiqueta escrita** va en **`localidad`**, `planta` vacía por
+  defecto; **`fin` vacío** si el albarán no trae fecha de retirada. La comisión manda sobre Notion.
+- Cruza el **nº de comisión** de la foto con la ficha de Notion (`N* Comision`, §3.3) para dejar
+  constancia si procede.
